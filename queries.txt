@@ -1,0 +1,8 @@
+get http://localhost/idule.txt
+get http://localhost/idule.txt contains toto
+get http://localhost/idule.txt contains toto and exclude titi or contains blabla
+get http://www.bidule.org/page.html contains bli or contains blu and exclude blo
+r1 = get http://localhost/idule.txt contains toto and exclude titi or contains blabla
+r2 = get http://localhost/idule.txt contains bli or contains blu and exclude blo
+stat r1 union r2 contains Trump and exclude Clinton and contains Clinton and exclude Trump contains Trump and contains Clinton
+stat r1 intersect r2 contains Trump and contains Clinton
