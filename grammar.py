@@ -1,3 +1,5 @@
+import sys
+
 from ply import yacc
 from requests import get
 from utils import apply_constraints
@@ -5,6 +7,13 @@ import lexer
 
 tokens = lexer.tokens
 assignments = dict()
+
+
+def p_error(t):
+    if t:
+        print(f"Syntax error at '{t.value}' (line {t.lineno}, column {t.lexpos})", file=sys.stderr)
+    else:
+        print(f"Unexpected end of file", file=sys.stderr)
 
 
 def p_default(p):
@@ -19,6 +28,12 @@ def p_default(p):
             print(p[1])
 
 
+def p_default_error(p):
+    """default : var error
+    """
+    print(f"Error: your query must be a selection, stat or an assigment", file=sys.stderr)
+
+
 # Other
 def p_assignment(p):
     """assignment : VAR EQUALS selection
@@ -26,6 +41,24 @@ def p_assignment(p):
     var_name = p[1]
     value = p[3]
     assignments[var_name] = value
+
+
+def p_assignment_url_error(t):
+    """assignment : VAR EQUALS URL
+    """
+    print(f"Error: you cannot assign an url to a variable", file=sys.stderr)
+
+
+def p_selection(p):
+    """selection : value
+    """
+    p[0] = p[1]
+
+
+def p_selection_constrains(p):
+    """selection : value constraints_chain
+    """
+    p[0] = apply_constraints(p[1], p[2])
 
 
 def p_value(p):
@@ -44,25 +77,27 @@ def p_get(p):
     p[0] = r.text.splitlines()
 
 
+def p_get_error(p):
+    """get : GET error
+    """
+    print(f"Syntax for get is `get <url>`", file=sys.stderr)
+
+
 def p_stat(p):
-    """stat : STAT stat_values constraints_chain
-    | STAT stat_values
+    """stat : STAT stat_values
     """
-    values = p[2]
-    if len(p) > 2:
-        values = apply_constraints(values, p[3])
-
-    p[0] = f'{len(values)} entries'
+    p[0] = f'{len(p[2])} entries'
 
 
-def p_selection(p):
-    """selection : value constraints_chain
-    | value
+def p_stat_values(p):
+    """stat_values : stat_operation"""
+    p[0] = p[1]
+
+
+def p_stat_values_constraints(p):
+    """stat_values : stat_operation constraints_chain
     """
-    if len(p) == 2:
-        p[0] = p[1]
-    else:
-        p[0] = apply_constraints(p[1], p[2])
+    p[0] = apply_constraints(p[1], p[2])
 
 
 def p_constraints_chain(p):
@@ -100,6 +135,11 @@ def p_constraint(p):
     p[0] = [(p[1], p[2])]
 
 
+def p_constraint_error(p):
+    """constraint_word : error var"""
+    print(f'Constraint error: constraint must be `contains` or `exclude`! "{p[1].value}" given', file=sys.stderr)
+
+
 def p_var(p):
     """var : VAR
     | SEARCH
@@ -107,12 +147,18 @@ def p_var(p):
     p[0] = assignments.get(p[1], p[1])
 
 
-def p_stat_values(p):
-    """stat_values : union
+def p_stat_operation(p):
+    """stat_operation : union
     | intersect
     | diff
     """
     p[0] = list(set(p[1]))
+
+
+def p_stat_operation_error(p):
+    """stat_operation : error
+    """
+    print(f'Stat error: operation must be `union`, `intersect` or `diff`! "{p[1]}" given', file=sys.stderr)
 
 
 def p_union(p):
@@ -136,10 +182,6 @@ def p_constraint_word(p):
     | EXCLUDE
     """
     p[0] = p[1]
-
-
-def p_error(t):
-    print(f"Syntax error at '{t.value}'")
 
 
 parser = yacc.yacc()
