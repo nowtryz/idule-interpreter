@@ -13,7 +13,7 @@ get <url>
 
 ### STAT
 ```
-stat <set> (intersect | diff | union) <set> <contraint>
+stat <set> (intersect | diff | union) <set> [<constraint>]
 ```
 Computes the union, difference or intersection and give some statistics about it.
 

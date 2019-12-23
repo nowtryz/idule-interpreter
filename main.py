@@ -3,7 +3,7 @@ from lexer import lexer
 
 print(
     'Welcome to Idule interpreter!',
-    'Use an "!" at the end of a query to get the lexic used for this query.'
+    'Use an "!" at the end of a query to get the lexic used for this query.',
     'Example of queries:',
     sep='\n', end=''
 )
